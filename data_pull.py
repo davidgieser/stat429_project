@@ -5,8 +5,8 @@ from tardis_dev import datasets
 TARDIS_TYPE = 'derivative_ticker'
 QUOTE = 'BTC'
 BASE = 'USDT'
-START = '2023-01-01'
-END = '2023-02-01'
+START = '2020-01-01'
+END = '2024-10-19'
 EXCHANGE = 'binance-futures'
 
 def get_api_key():
