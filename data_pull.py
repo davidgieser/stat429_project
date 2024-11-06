@@ -27,17 +27,17 @@ def download_tardis_data(exchange, start_date, end_date, tardis_sym, instrument)
 
         filename = f"{exchange}_{tardis_sym}_{instrument}_{cur_str}.csv.gz"
         if os.path.exists(filename):
+            print(f"File already exists: {filename}")
             cur_date += timedelta(days=1)
             continue
 
+        # Download data using the Tardis API
         datasets.download(
             exchange=exchange,
-            data_types=[
-                "derivative_ticker",
-            ],
+            data_types=["derivative_ticker"],
             from_date=cur_str,
             to_date=tom_str,
-            symbols=["btcusdt"],
+            symbols=[instrument],
             api_key=api_key,
         )
         
