@@ -1,0 +1,68 @@
+def perform_hyperparameter_tuning_logreg(X_train, y_train, random_state=42):
+    """
+    Perform hyperparameter tuning for Logistic Regression using GridSearchCV.
+    """
+    from sklearn.model_selection import GridSearchCV
+    from sklearn.linear_model import LogisticRegression
+
+    param_grid = {
+        'C': [0.01, 0.1, 1, 10, 100],  # Inverse of regularization strength
+        'penalty': ['l1', 'l2'],       # Regularization type
+        'solver': ['liblinear']        # Solver that supports both 'l1' and 'l2' penalties
+    }
+
+    grid_search = GridSearchCV(
+        estimator=LogisticRegression(
+            random_state=random_state,
+            class_weight='balanced',
+            max_iter=1000
+        ),
+        param_grid=param_grid,
+        scoring='roc_auc',
+        cv=5,
+        n_jobs=-1
+    )
+
+    grid_search.fit(X_train, y_train)
+    best_model = grid_search.best_estimator_
+    return best_model
+
+def plot_feature_importance(model, feature_names, model_type='tree'):
+    """
+    Plot the feature importance or coefficients from the model.
+    """
+    import matplotlib.pyplot as plt
+    import pandas as pd
+
+    if model_type == 'tree':
+        # For tree-based models like Random Forest
+        importances = model.feature_importances_
+        feature_importance_df = pd.DataFrame({
+            'Feature': feature_names,
+            'Importance': importances
+        }).sort_values(by='Importance', ascending=False)
+
+        plt.figure(figsize=(10, 6))
+        plt.bar(feature_importance_df['Feature'], feature_importance_df['Importance'])
+        plt.xticks(rotation=90)
+        plt.title('Feature Importance')
+        plt.tight_layout()
+        plt.show()
+
+    elif model_type == 'logistic_regression':
+        # For Logistic Regression, plot coefficients
+        coefficients = model.coef_[0]
+        feature_importance_df = pd.DataFrame({
+            'Feature': feature_names,
+            'Coefficient': coefficients
+        }).sort_values(by='Coefficient', ascending=False)
+
+        plt.figure(figsize=(10, 6))
+        plt.bar(feature_importance_df['Feature'], feature_importance_df['Coefficient'])
+        plt.xticks(rotation=90)
+        plt.title('Feature Coefficients (Logistic Regression)')
+        plt.tight_layout()
+        plt.show()
+
+    else:
+        print(f"Model type '{model_type}' not supported for plotting feature importance.")

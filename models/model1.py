@@ -5,29 +5,23 @@ from utilities.data_processing import load_data, preprocess_data, create_feature
 from utilities.model_utils import train_classification_model, evaluate_classification_model, save_model
 from config import (
     BINANCE_BTC_PERP_CSV,
-    MODEL1_PATH,
-    SCALER1_PATH,
+    MODEL1_LOGREG_PATH,
+    SCALER1_LOGREG_PATH,
     RANDOM_STATE
 )
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 import joblib
 
-def train_model1(data_filepath, model_filepath, scaler_filepath):
+def train_model1_logistic_regression(data_filepath, model_filepath, scaler_filepath):
     """
-    Train Model 1 to predict the direction of funding rate movement.
+    Train Model 1 using Logistic Regression to predict the direction of funding rate movement.
     """
     # Load and preprocess data
     df = load_data(data_filepath)
     df = preprocess_data(df)
     df = create_features(df)
-
-    # Define features and target
-    feature_columns = [
-        'open_interest', 'mark_price',
-        'hour_sin', 'hour_cos', 'day_sin', 'day_cos', 'month_sin', 'month_cos'
-    ]
 
     # Create the 'direction' target variable
     df['future_funding_rate'] = df['funding_rate'].shift(-1)
@@ -35,6 +29,11 @@ def train_model1(data_filepath, model_filepath, scaler_filepath):
     df['direction'] = (df['future_funding_rate'] > df['funding_rate']).astype(int)
     df.drop(columns=['future_funding_rate'], inplace=True)
 
+    # Define features and target
+    feature_columns = [
+        'open_interest', 'mark_price',
+        'hour_sin', 'hour_cos', 'day_sin', 'day_cos', 'month_sin', 'month_cos'
+    ]
     X = df[feature_columns]
     y = df['direction']
 
@@ -66,22 +65,27 @@ def train_model1(data_filepath, model_filepath, scaler_filepath):
         axis=1
     )
 
-    # Initialize and train the model
-    rf_model = RandomForestClassifier(n_estimators=100, random_state=RANDOM_STATE)
-    rf_model = train_classification_model(rf_model, X_train_prepared, y_train)
+    # Initialize and train the Logistic Regression model
+    logreg_model = LogisticRegression(
+        random_state=RANDOM_STATE,
+        class_weight='balanced',
+        max_iter=1000,
+        solver='liblinear'
+    )
+    logreg_model = train_classification_model(logreg_model, X_train_prepared, y_train)
 
     # Evaluate the model
-    evaluate_classification_model(rf_model, X_test_prepared, y_test)
+    evaluate_classification_model(logreg_model, X_test_prepared, y_test)
 
     # Save the trained model and scaler
-    save_model(rf_model, model_filepath)
+    save_model(logreg_model, model_filepath)
     save_model(scaler, scaler_filepath)
 
 if __name__ == "__main__":
     # Define file paths using config.py
     data_filepath = BINANCE_BTC_PERP_CSV
-    model_filepath = MODEL1_PATH
-    scaler_filepath = SCALER1_PATH
+    model_filepath = MODEL1_LOGREG_PATH
+    scaler_filepath = SCALER1_LOGREG_PATH
 
-    # Train Model 1
-    train_model1(data_filepath, model_filepath, scaler_filepath)
+    # Train Model 1 using Logistic Regression
+    train_model1_logistic_regression(data_filepath, model_filepath, scaler_filepath)

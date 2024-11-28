@@ -1,113 +1,92 @@
-# utilities/functions.py
-
 import pandas as pd
-from sklearn.metrics import (
-    accuracy_score,
-    roc_auc_score,
-    classification_report,
-    confusion_matrix
-)
+import numpy as np
+from sklearn.metrics import accuracy_score, roc_auc_score, classification_report, confusion_matrix, f1_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from imblearn.over_sampling import SMOTE
 import matplotlib.pyplot as plt
+import joblib
+
+# ===========================================
+# Feature Engineering Functions
+# ===========================================
 
 def add_lag_features(df):
     """
-    Add lag features to the DataFrame.
+    Add lag features to capture temporal trends.
     """
+    if 'funding_rate' not in df.columns:
+        raise KeyError("'funding_rate' column is missing. Check the input data.")
+
+    # Lagged funding rate features
     df['funding_rate_lag1'] = df['funding_rate'].shift(1)
-    df['funding_rate_lag2'] = df['funding_rate'].shift(2)  # Uncommented
-    df['open_interest_lag1'] = df['open_interest'].shift(1)
-    df['mark_price_lag1'] = df['mark_price'].shift(1)
+    df['funding_rate_lag2'] = df['funding_rate'].shift(2)
+
+    if 'open_interest' in df.columns:
+        df['open_interest_lag1'] = df['open_interest'].shift(1)
+    else:
+        df['open_interest_lag1'] = np.nan
+
+    if 'mark_price' in df.columns:
+        df['mark_price_lag1'] = df['mark_price'].shift(1)
+    else:
+        df['mark_price_lag1'] = np.nan
+
+    # Handle missing values from lagging
+    df.fillna(0, inplace=True)
     return df
 
 def add_technical_indicators(df):
     """
-    Add technical indicators to the DataFrame.
+    Add technical indicators like moving averages to the DataFrame.
     """
+    if 'funding_rate' not in df.columns:
+        raise KeyError("'funding_rate' column is missing in the DataFrame. Check input data.")
+    
     df['funding_rate_ma3'] = df['funding_rate'].rolling(window=3).mean()
-    df['funding_rate_ma5'] = df['funding_rate'].rolling(window=5).mean()  # Uncommented
+    df['funding_rate_ma5'] = df['funding_rate'].rolling(window=5).mean()
+
     return df
 
-def apply_smote(X_train_prepared, y_train, random_state=42):
+def add_interaction_terms(df):
+    """
+    Add interaction terms to capture relationships between features.
+    """
+    if 'funding_rate_lag1' not in df.columns or 'funding_rate_lag2' not in df.columns:
+        raise KeyError("'funding_rate_lag1' or 'funding_rate_lag2' columns are missing. Ensure lag features are added first.")
+    if 'funding_rate_ma3' not in df.columns:
+        raise KeyError("'funding_rate_ma3' column is missing. Ensure technical indicators are added first.")
+
+    df['interaction1'] = df['funding_rate_lag1'] * df['funding_rate_lag2']
+
+    # Handle potential division-by-zero issues for interaction2
+    interaction2 = df['funding_rate_ma3'] / (df['funding_rate_lag1'].replace(0, np.nan) + 1e-6)
+    interaction2 = interaction2.replace([np.inf, -np.inf], np.nan)
+    interaction2 = interaction2.fillna(0)
+
+    # Assign the processed interaction2 back to the DataFrame
+    df['interaction2'] = interaction2
+
+    return df
+
+# ===========================================
+# Data Sampling and Balancing
+# ===========================================
+
+def apply_smote(X_train, y_train, sampling_strategy=1.0, random_state=42):
     """
     Apply SMOTE to balance the classes in the training data.
-    """
-    smote = SMOTE(random_state=random_state)
-    X_train_resampled, y_train_resampled = smote.fit_resample(X_train_prepared, y_train)
-    return X_train_resampled, y_train_resampled
 
-def perform_hyperparameter_tuning(X_train, y_train, random_state=42):
-    """
-    Perform hyperparameter tuning using GridSearchCV.
-    """
-    param_grid = {
-        'n_estimators': [100, 200],
-        'max_depth': [None, 5, 10],
-        'min_samples_split': [2, 5],
-        'class_weight': ['balanced']
-    }
+    Parameters:
+        X_train (pd.DataFrame): Training features.
+        y_train (pd.Series): Training target variable.
+        sampling_strategy (float or dict): Sampling strategy for SMOTE.
+        random_state (int): Random seed for reproducibility.
 
-    grid_search = GridSearchCV(
-        estimator=RandomForestClassifier(random_state=random_state),
-        param_grid=param_grid,
-        scoring='roc_auc',
-        cv=5,
-        n_jobs=-1
-    )
-
-    grid_search.fit(X_train, y_train)
-    best_model = grid_search.best_estimator_
-    return best_model
-
-def evaluate_classification_model(model, X_test, y_test, y_proba=None, threshold=0.5):
+    Returns:
+        X_resampled, y_resampled: Balanced training data.
     """
-    Evaluate the classification model's performance.
-    """
-    if y_proba is None:
-        y_proba = model.predict_proba(X_test)[:, 1]
-    y_pred = (y_proba >= threshold).astype(int)
-
-    print("Accuracy:", accuracy_score(y_test, y_pred))
-    print("ROC AUC Score:", roc_auc_score(y_test, y_proba))
-    print("Classification Report:\n", classification_report(y_test, y_pred))
-    print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
-
-def plot_feature_importance(model, feature_names):
-    """
-    Plot the feature importance from the model.
-    """
-    importances = model.feature_importances_
-    feature_importance_df = pd.DataFrame({
-        'Feature': feature_names,
-        'Importance': importances
-    }).sort_values(by='Importance', ascending=False)
-    
-    plt.figure(figsize=(10, 6))
-    plt.bar(feature_importance_df['Feature'], feature_importance_df['Importance'])
-    plt.xticks(rotation=90)
-    plt.title('Feature Importance')
-    plt.tight_layout()
-    plt.show()
-
-def train_classification_model(model, X_train, y_train):
-    """
-    Train the classification model.
-    """
-    model.fit(X_train, y_train)
-    return model
-
-def save_model(model, filepath):
-    """
-    Save the trained model to a file.
-    """
-    import joblib
-    joblib.dump(model, filepath)
-
-def load_model(filepath):
-    """
-    Load a model from a file.
-    """
-    import joblib
-    return joblib.load(filepath)
+    smote = SMOTE(sampling_strategy=sampling_strategy, random_state=random_state)
+    X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
+    return X_resampled, y_resampled
