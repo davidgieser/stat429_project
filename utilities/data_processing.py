@@ -6,6 +6,8 @@ from utilities.functions import (
     add_lag_features,
     add_technical_indicators,
     add_interaction_terms,
+    # add_rate_of_change,
+    # add_advanced_features,
 )
 
 # ===========================================
@@ -22,20 +24,26 @@ def load_data(filepath):
         print(f"Error loading data: {e}")
         return None
 
-def preprocess_data(df):
+def preprocess_data(df, handle_timestamps=True):
     """
-    Preprocess the data by converting timestamps and sorting.
+    Preprocess the data by handling timestamps, sorting, and cleaning missing or infinite values.
     """
-    # Make a copy of the DataFrame to avoid SettingWithCopyWarning
     df = df.copy()
 
-    # Convert timestamp columns to datetime
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='us', utc=True)
+    if handle_timestamps and 'timestamp' in df.columns:
+        try:
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='us', utc=True)
+            df.sort_values('timestamp', inplace=True)
+        except Exception as e:
+            print(f"Error during timestamp processing: {e}")
+    elif handle_timestamps:
+        print("'timestamp' column is missing. Skipping timestamp processing.")
 
-    # Sort the DataFrame by timestamp
-    df.sort_values('timestamp', inplace=True)
+    # Handle infinite and missing values
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    df.fillna(0, inplace=True)
 
-    # Reset index if necessary
+    # Reset index after processing
     df.reset_index(drop=True, inplace=True)
 
     return df
@@ -68,6 +76,8 @@ def create_features(df):
 # ===========================================
 # Processing Pipeline
 # ===========================================
+
+
 def process_pipeline(filepath):
     """
     Complete processing pipeline for loading, preprocessing, and feature creation.
@@ -75,71 +85,43 @@ def process_pipeline(filepath):
     try:
         print("Loading the dataset...")
         df = load_data(filepath)
-        if df.empty:
-            raise ValueError("Dataset is empty. Check the input file.")
         print(f"Dataset loaded successfully. Shape: {df.shape}")
+        print(df.head())  # Preview the initial data
     except Exception as e:
         print(f"Error during dataset loading: {e}")
         return None
-
+    
     try:
+        print("Checking for 'timestamp' column...")
+        if 'timestamp' not in df.columns:
+            print("'timestamp' column is missing. Adding dummy timestamps.")
+            df['timestamp'] = pd.Timestamp.now()
+
         print("Preprocessing the data...")
         df = preprocess_data(df)
-        if df.empty:
-            raise ValueError("DataFrame is empty after preprocessing.")
         print(f"Data preprocessing completed. Shape: {df.shape}")
     except Exception as e:
         print(f"Error during data preprocessing: {e}")
         return None
 
-    try:
-        print("Adding lag features...")
-        df = add_lag_features(df)
-        if 'funding_rate_lag1' not in df.columns:
-            raise KeyError("'funding_rate_lag1' not created. Check `add_lag_features`.")
-        print(f"Lag features added. Shape: {df.shape}")
-    except Exception as e:
-        print(f"Error during adding lag features: {e}")
-        return None
+    # List of pipeline steps
+    pipeline_steps = [
+        ("Preprocessing the data", preprocess_data),
+        ("Adding lag features", add_lag_features),
+        ("Adding technical indicators", add_technical_indicators),
+        ("Adding interaction terms", add_interaction_terms),
+        ("Creating features and target variable", create_features),
+    ]
 
-    try:
-        print("Adding technical indicators...")
-        df = add_technical_indicators(df)
-        print(f"Technical indicators added. Shape: {df.shape}")
-    except Exception as e:
-        print(f"Error during adding technical indicators: {e}")
-        return None
+    for step_name, step_function in pipeline_steps:
+        try:
+            print(f"{step_name}...")
+            df = step_function(df)
+            print(f"{step_name} completed. Shape: {df.shape}")
+            print(df.head())  # Optional: Preview data after each step
+        except Exception as e:
+            print(f"Error during {step_name.lower()}: {e}")
+            return None
 
-    try:
-        print("Adding interaction terms...")
-        df = add_interaction_terms(df)
-        print(f"Interaction terms added. Shape: {df.shape}")
-    except Exception as e:
-        print(f"Error during adding interaction terms: {e}")
-        return None
-
-    try:
-        print("Creating features and target variable...")
-        df = create_features(df)
-        print(f"Features and target variable created. Shape: {df.shape}")
-    except Exception as e:
-        print(f"Error during creating features and target variable: {e}")
-        return None
-
-    try:
-        print("Filling missing values with 0...")
-        df.fillna(0, inplace=True)
-        print("Missing values filled.")
-    except Exception as e:
-        print(f"Error during filling missing values: {e}")
-        return None
-
-    try:
-        print("Dropping rows with missing values...")
-        df.dropna(inplace=True)
-        print(f"Rows with missing values dropped. Final shape: {df.shape}")
-    except Exception as e:
-        print(f"Error during dropping rows with missing values: {e}")
-        return None
-
+    print("Pipeline completed successfully.")
     return df

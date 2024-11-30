@@ -39,15 +39,29 @@ def add_lag_features(df):
 
 def add_technical_indicators(df):
     """
-    Add technical indicators like moving averages to the DataFrame.
+    Add technical indicators like moving averages, exponential moving averages, volatility, and rate of change.
     """
-    if 'funding_rate' not in df.columns:
-        raise KeyError("'funding_rate' column is missing in the DataFrame. Check input data.")
-    
+    if 'funding_rate' not in df.columns or 'mark_price' not in df.columns:
+        raise KeyError("'funding_rate' or 'mark_price' column is missing in the DataFrame. Check input data.")
+
+    # Moving averages
     df['funding_rate_ma3'] = df['funding_rate'].rolling(window=3).mean()
     df['funding_rate_ma5'] = df['funding_rate'].rolling(window=5).mean()
 
+    # Exponential moving averages
+    df['funding_rate_ema3'] = df['funding_rate'].ewm(span=3, adjust=False).mean()
+    df['funding_rate_ema5'] = df['funding_rate'].ewm(span=5, adjust=False).mean()
+
+    # Volatility (Standard Deviation)
+    df['volatility_5min'] = df['mark_price'].rolling(window=5).std()
+
+    # Rate of Change (ROC)
+    df['funding_rate_roc1'] = df['funding_rate'].pct_change(periods=1)
+    df['funding_rate_roc3'] = df['funding_rate'].pct_change(periods=3)
+    df['open_interest_roc'] = df['open_interest'].pct_change(periods=1)
+
     return df
+
 
 def add_interaction_terms(df):
     """
@@ -58,6 +72,7 @@ def add_interaction_terms(df):
     if 'funding_rate_ma3' not in df.columns:
         raise KeyError("'funding_rate_ma3' column is missing. Ensure technical indicators are added first.")
 
+    # Interaction Terms
     df['interaction1'] = df['funding_rate_lag1'] * df['funding_rate_lag2']
 
     # Handle potential division-by-zero issues for interaction2
@@ -68,7 +83,11 @@ def add_interaction_terms(df):
     # Assign the processed interaction2 back to the DataFrame
     df['interaction2'] = interaction2
 
+    if 'mark_price_lag1' in df.columns and 'funding_rate_ma3' in df.columns:
+        df['interaction3'] = df['mark_price_lag1'] * df['funding_rate_ma3']
+
     return df
+
 
 # ===========================================
 # Data Sampling and Balancing
