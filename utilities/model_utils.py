@@ -75,10 +75,13 @@ def perform_hyperparameter_tuning(estimator, param_grid, X_train, y_train, scori
         verbose=verbose
     )
     
+    # Fit the model before accessing best parameters and score
+    grid_search.fit(X_train, y_train)
+
+    # Access attributes after the fit
     print(f"Best parameters: {grid_search.best_params_}")
     print(f"Best score: {grid_search.best_score_}")
 
-    grid_search.fit(X_train, y_train)
     return grid_search.best_estimator_
 
 # ===========================================
