@@ -56,6 +56,25 @@ def load_model(filepath):
     """
     return joblib.load(filepath)
 
+def save_garch_model(model_result, filepath):
+    """
+    Save the GARCH model result to a file using pickle.
+    """
+    import pickle
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    with open(filepath, 'wb') as f:
+        pickle.dump(model_result, f)
+
+def load_garch_model(filepath):
+    """
+    Load a GARCH model result from a file using pickle.
+    """
+    import pickle
+    with open(filepath, 'rb') as f:
+        model_result = pickle.load(f)
+    return model_result
+
 # ===========================================
 # Hyperparameter Tuning
 # ===========================================
