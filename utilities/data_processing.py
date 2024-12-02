@@ -121,6 +121,7 @@ def process_pipeline(filepath, rescale=False, scaling_factor=1e6, handle_outlier
 
     # List of pipeline steps
     pipeline_steps = [
+        ("Preprocessing the data", preprocess_data),
         ("Adding lag features", add_lag_features),
         ("Adding technical indicators", add_technical_indicators),
         ("Adding interaction terms", add_interaction_terms),
