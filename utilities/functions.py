@@ -7,6 +7,8 @@ from sklearn.linear_model import LogisticRegression
 from imblearn.over_sampling import SMOTE
 import matplotlib.pyplot as plt
 import joblib
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from scipy import stats
 
 # ===========================================
 # Feature Engineering Functions
@@ -62,7 +64,6 @@ def add_technical_indicators(df):
 
     return df
 
-
 def add_interaction_terms(df):
     """
     Add interaction terms to capture relationships between features.
@@ -88,7 +89,6 @@ def add_interaction_terms(df):
 
     return df
 
-
 # ===========================================
 # Data Sampling and Balancing
 # ===========================================
@@ -109,3 +109,51 @@ def apply_smote(X_train, y_train, sampling_strategy=1.0, random_state=42):
     smote = SMOTE(sampling_strategy=sampling_strategy, random_state=random_state)
     X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
     return X_resampled, y_resampled
+
+def apply_smote_tomek(X_train, y_train, random_state=42):
+    """
+    Apply SMOTE-Tomek to balance the classes in the training data.
+    """
+    from imblearn.combine import SMOTETomek
+    smote_tomek = SMOTETomek(random_state=random_state)
+    X_train_resampled, y_train_resampled = smote_tomek.fit_resample(X_train, y_train)
+    return X_train_resampled, y_train_resampled
+
+# ===========================================
+# Time Series Diagnostics
+# ===========================================
+
+def perform_ljung_box_test(residuals, lags=10):
+    """
+    Perform the Ljung-Box test on residuals.
+    """
+    from statsmodels.stats.diagnostic import acorr_ljungbox
+    lb_test = acorr_ljungbox(residuals, lags=[lags], return_df=True)
+    print(lb_test)
+
+def plot_acf_pacf(series, lags=50):
+    """
+    Plot ACF and PACF plots.
+    """
+    from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    plot_acf(series.dropna(), lags=lags, ax=plt.gca())
+    plt.subplot(1, 2, 2)
+    plot_pacf(series.dropna(), lags=lags, ax=plt.gca())
+    plt.show()
+
+def remove_outliers(series, z_score_threshold=3):
+    """
+    Remove outliers from a pandas Series based on z-score threshold.
+    """
+    z_scores = np.abs(stats.zscore(series.dropna()))
+    filtered_indices = np.where(z_scores < z_score_threshold)
+    return series.iloc[filtered_indices].copy()
+
+def rescale_series(series, scaling_factor):
+    """
+    Rescale a pandas Series by a scaling factor.
+    """
+    return series * scaling_factor

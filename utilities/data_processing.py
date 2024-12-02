@@ -1,3 +1,5 @@
+# utilities/data_processing.py
+
 import pandas as pd
 import numpy as np
 import os
@@ -6,8 +8,8 @@ from utilities.functions import (
     add_lag_features,
     add_technical_indicators,
     add_interaction_terms,
-    # add_rate_of_change,
-    # add_advanced_features,
+    remove_outliers,
+    rescale_series
 )
 
 # ===========================================
@@ -51,6 +53,7 @@ def preprocess_data(df, handle_timestamps=True):
 # ===========================================
 # Feature Engineering
 # ===========================================
+
 def create_features(df):
     """
     Create additional features and the target variable.
@@ -77,10 +80,10 @@ def create_features(df):
 # Processing Pipeline
 # ===========================================
 
-
-def process_pipeline(filepath):
+def process_pipeline(filepath, rescale=False, scaling_factor=1e6, handle_outliers=False):
     """
     Complete processing pipeline for loading, preprocessing, and feature creation.
+    Includes options for rescaling and outlier removal.
     """
     try:
         print("Loading the dataset...")
@@ -104,9 +107,20 @@ def process_pipeline(filepath):
         print(f"Error during data preprocessing: {e}")
         return None
 
+    # Rescale funding_rate if required
+    if rescale:
+        print(f"Rescaling 'funding_rate' by a factor of {scaling_factor}...")
+        df['funding_rate'] = rescale_series(df['funding_rate'], scaling_factor)
+        print(f"Rescaling completed. 'funding_rate' head:\n{df['funding_rate'].head()}")
+
+    # Optionally remove outliers
+    if handle_outliers:
+        print("Removing outliers from 'funding_rate'...")
+        df['funding_rate'] = remove_outliers(df['funding_rate'])
+        print(f"Outlier removal completed. 'funding_rate' head:\n{df['funding_rate'].head()}")
+
     # List of pipeline steps
     pipeline_steps = [
-        ("Preprocessing the data", preprocess_data),
         ("Adding lag features", add_lag_features),
         ("Adding technical indicators", add_technical_indicators),
         ("Adding interaction terms", add_interaction_terms),
@@ -122,6 +136,10 @@ def process_pipeline(filepath):
         except Exception as e:
             print(f"Error during {step_name.lower()}: {e}")
             return None
+
+    # Drop rows with missing values due to lagging/rolling operations
+    df.dropna(inplace=True)
+    print(f"Final dataset shape after dropping NaNs: {df.shape}")
 
     print("Pipeline completed successfully.")
     return df

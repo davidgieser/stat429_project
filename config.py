@@ -25,6 +25,8 @@ MODEL1_PATH = os.path.join(SAVED_MODELS_DIR, 'model1.pkl')
 SCALER1_PATH = os.path.join(SAVED_MODELS_DIR, 'scaler1.pkl')
 MODEL1_LOGREG_PATH = os.path.join(SAVED_MODELS_DIR, 'model1_logistic_regression.pkl')
 SCALER1_LOGREG_PATH = os.path.join(SAVED_MODELS_DIR, 'scaler1_logistic_regression.pkl')
+MODEL2_PATH = os.path.join(SAVED_MODELS_DIR, 'model2_garch.pkl')
+
 
 # ===========================================
 # General Configurations
