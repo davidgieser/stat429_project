@@ -37,7 +37,26 @@ def evaluate_classification_model(model, X_test, y_test, y_proba=None, threshold
     print("ROC AUC Score:", roc_auc_score(y_test, y_proba))
     print("Classification Report:\n", classification_report(y_test, y_pred))
     print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
-
+    
+def fit_and_evaluate_model(model_name, model):
+    """
+    Fit the GARCH model and return the result.
+    """
+    print(f"\nFitting {model_name}...")
+    try:
+        result = model.fit(
+            update_freq=5,
+            disp='off',
+            tol=1e-6,
+            options={'maxiter': 1000}
+        )
+        print(f"\n{model_name} Summary:")
+        print(result.summary())
+        return result
+    except Exception as e:
+        print(f"Error fitting {model_name}: {e}")
+        return None
+    
 # ===========================================
 # Model Persistence (Save/Load)
 # ===========================================

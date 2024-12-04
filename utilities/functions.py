@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import warnings
 from sklearn.metrics import accuracy_score, roc_auc_score, classification_report, confusion_matrix, f1_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
@@ -80,6 +81,7 @@ def add_interaction_terms(df):
     interaction2 = df['funding_rate_ma3'] / (df['funding_rate_lag1'].replace(0, np.nan) + 1e-6)
     interaction2 = interaction2.replace([np.inf, -np.inf], np.nan)
     interaction2 = interaction2.fillna(0)
+    df['interaction2'] = interaction2
 
     # Assign the processed interaction2 back to the DataFrame
     df['interaction2'] = interaction2
@@ -151,6 +153,13 @@ def remove_outliers(series, z_score_threshold=3):
     z_scores = np.abs(stats.zscore(series.dropna()))
     filtered_indices = np.where(z_scores < z_score_threshold)
     return series.iloc[filtered_indices].copy()
+
+def winsorize_series(series, limits):
+    """
+    Winsorize a pandas Series to handle extreme values.
+    """
+    from scipy.stats.mstats import winsorize
+    return winsorize(series, limits=limits)
 
 def rescale_series(series, scaling_factor):
     """
