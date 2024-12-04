@@ -9,7 +9,8 @@ from utilities.functions import (
     add_technical_indicators,
     add_interaction_terms,
     remove_outliers,
-    rescale_series
+    rescale_series,
+    winsorize_series
 )
 
 # ===========================================
@@ -80,7 +81,7 @@ def create_features(df):
 # Processing Pipeline
 # ===========================================
 
-def process_pipeline(filepath, rescale=False, scaling_factor=1e6, handle_outliers=False):
+def process_pipeline(filepath, rescale=False, scaling_factor=1e6, handle_outliers=False, winsorize=False, winsorize_limits=(0.05, 0.05)):
     """
     Complete processing pipeline for loading, preprocessing, and feature creation.
     Includes options for rescaling and outlier removal.
@@ -93,41 +94,24 @@ def process_pipeline(filepath, rescale=False, scaling_factor=1e6, handle_outlier
     except Exception as e:
         print(f"Error during dataset loading: {e}")
         return None
-    
-    try:
-        print("Checking for 'timestamp' column...")
-        if 'timestamp' not in df.columns:
-            print("'timestamp' column is missing. Adding dummy timestamps.")
-            df['timestamp'] = pd.Timestamp.now()
 
-        print("Preprocessing the data...")
-        df = preprocess_data(df)
-        print(f"Data preprocessing completed. Shape: {df.shape}")
-    except Exception as e:
-        print(f"Error during data preprocessing: {e}")
-        return None
-
-    # Rescale funding_rate if required
-    if rescale:
-        print(f"Rescaling 'funding_rate' by a factor of {scaling_factor}...")
-        df['funding_rate'] = rescale_series(df['funding_rate'], scaling_factor)
-        print(f"Rescaling completed. 'funding_rate' head:\n{df['funding_rate'].head()}")
-
-    # Optionally remove outliers
-    if handle_outliers:
-        print("Removing outliers from 'funding_rate'...")
-        df['funding_rate'] = remove_outliers(df['funding_rate'])
-        print(f"Outlier removal completed. 'funding_rate' head:\n{df['funding_rate'].head()}")
+    # Optionally winsorize the funding_rate column
+    if winsorize:
+        print(f"Winsorizing 'funding_rate' with limits {winsorize_limits}...")
+        df['funding_rate'] = winsorize_series(df['funding_rate'], limits=winsorize_limits)
+        print(f"Winsorization completed. 'funding_rate' head:\n{df['funding_rate'].head()}")
 
     # List of pipeline steps
     pipeline_steps = [
         ("Preprocessing the data", preprocess_data),
+        ("Rescaling 'funding_rate'", lambda df: df.assign(funding_rate=rescale_series(df['funding_rate'], scaling_factor)) if rescale else df),
+        ("Removing outliers from 'funding_rate'", lambda df: df.assign(funding_rate=remove_outliers(df['funding_rate'])) if handle_outliers else df),
         ("Adding lag features", add_lag_features),
         ("Adding technical indicators", add_technical_indicators),
         ("Adding interaction terms", add_interaction_terms),
         ("Creating features and target variable", create_features),
     ]
-
+    
     for step_name, step_function in pipeline_steps:
         try:
             print(f"{step_name}...")
