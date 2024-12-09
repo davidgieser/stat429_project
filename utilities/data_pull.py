@@ -5,8 +5,6 @@ from datetime import datetime, timedelta
 from tardis_dev import datasets
 from config import (
     TARDIS_TYPE,
-    QUOTE,
-    BASE,
     START_DATE,
     END_DATE,
     EXCHANGE,

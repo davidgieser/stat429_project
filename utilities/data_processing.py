@@ -17,11 +17,12 @@ from utilities.functions import (
 # Data Loading and Preprocessing
 # ===========================================
 
-def load_data(filepath):
+def load_data(filepath, do_preview=True):
     try:
         df = pd.read_csv(filepath)
-        print("Data loaded. Preview:")
-        print(df.head())
+        if do_preview:
+            print("Data loaded. Preview:")
+            print(df.head())
         return df
     except Exception as e:
         print(f"Error loading data: {e}")

@@ -138,7 +138,7 @@ def plot_acf_pacf(series, lags=50):
     Plot ACF and PACF plots.
     """
     from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-
+    
     plt.figure(figsize=(12, 5))
     plt.subplot(1, 2, 1)
     plot_acf(series.dropna(), lags=lags, ax=plt.gca())

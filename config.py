@@ -27,6 +27,12 @@ MODEL1_LOGREG_PATH = os.path.join(SAVED_MODELS_DIR, 'model1_logistic_regression.
 SCALER1_LOGREG_PATH = os.path.join(SAVED_MODELS_DIR, 'scaler1_logistic_regression.pkl')
 MODEL2_PATH = os.path.join(SAVED_MODELS_DIR, 'model2_garch.pkl')
 
+# Instrument specifications
+TARDIS_TYPE = 'derivative_ticker'
+INSTRUMENT = 'btcusdt'
+START_DATE = '2020-01-01'
+END_DATE = '2024-10-18'
+EXCHANGE = 'binance-futures'
 
 # ===========================================
 # General Configurations
