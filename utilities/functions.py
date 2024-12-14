@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import joblib
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from scipy import stats
+from config import MODEL1_PATH, MODEL2_PATH, SCALER1_PATH
+from utilities.model_utils import load_model, load_garch_model
 
 # ===========================================
 # Feature Engineering Functions
@@ -89,6 +91,52 @@ def add_interaction_terms(df):
     if 'mark_price_lag1' in df.columns and 'funding_rate_ma3' in df.columns:
         df['interaction3'] = df['mark_price_lag1'] * df['funding_rate_ma3']
 
+    return df
+
+# ===========================================
+# Model 1 & Model 2 Integration for Model 3
+# ===========================================
+
+def add_model1_direction(df):
+    # Load model and scaler
+    model1 = load_model(MODEL1_PATH)
+    scaler1 = load_model(SCALER1_PATH) 
+
+    model1_feature_columns = [
+        'funding_rate_lag1', 'funding_rate_lag2', 'funding_rate_ma3', 'funding_rate_ma5', 'funding_rate_ema3',
+        'open_interest', 'open_interest_lag1', 'open_interest_roc',
+        'mark_price', 'mark_price_lag1', 'volatility_5min',
+        'funding_rate_roc1', 'funding_rate_roc3', 'interaction2', 'interaction3'
+    ]
+
+    missing_columns = [col for col in model1_feature_columns if col not in df.columns]
+    if missing_columns:
+        raise ValueError(f"Missing columns for Model 1 prediction: {missing_columns}")
+
+    X = df[model1_feature_columns]
+
+    # Final cleanup step to remove infinities and NaNs before scaling
+    X = X.replace([np.inf, -np.inf], np.nan).fillna(0)
+    X = X.clip(-1e9, 1e9)
+    print("Max values after clipping:\n", X.max())
+    print("Min values after clipping:\n", X.min())
+
+    X_scaled = scaler1.transform(X)
+
+    # Predict direction
+    df['model1_direction_pred'] = model1.predict(X_scaled)
+    return df
+
+def add_model2_volatility(df, steps=5):
+    """
+    Load Model 2 (GARCH Model) and add forecasted volatility as features.
+    Steps represent how far ahead we forecast, but we use h.1 for simplicity.
+    """
+    model2_result = load_garch_model(MODEL2_PATH)
+    volatility_forecast = model2_result.forecast(horizon=steps)
+    # Take the first step forecasted variance
+    h1_variance = volatility_forecast.variance.iloc[-1, 0]
+    df['model2_volatility_h1'] = h1_variance
     return df
 
 # ===========================================

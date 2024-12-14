@@ -96,6 +96,11 @@ def process_pipeline(filepath, rescale=False, scaling_factor=1e6, handle_outlier
         print(f"Error during dataset loading: {e}")
         return None
 
+    # Drop non-numeric columns that aren't needed for modeling
+    # Adjust this list to remove any columns like 'exchange', 'symbol', 'local_timestamp', 'funding_timestamp' etc.
+    columns_to_drop = ['exchange', 'symbol']
+    df.drop(columns=[col for col in columns_to_drop if col in df.columns], inplace=True, errors='ignore')
+
     # Optionally winsorize the funding_rate column
     if winsorize:
         print(f"Winsorizing 'funding_rate' with limits {winsorize_limits}...")
