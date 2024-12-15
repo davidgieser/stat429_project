@@ -21,12 +21,13 @@ MODELS_DIR = os.path.join(BASE_DIR, 'models')
 SAVED_MODELS_DIR = os.path.join(MODELS_DIR, 'saved_models')
 
 # Model file paths
-MODEL1_PATH = os.path.join(SAVED_MODELS_DIR, 'model1_RF.pkl')
-SCALER1_PATH = os.path.join(SAVED_MODELS_DIR, 'scaler1_RF.pkl')
-MODEL1_LOGREG_PATH = os.path.join(SAVED_MODELS_DIR, 'model1_LR.pkl')
-SCALER1_LOGREG_PATH = os.path.join(SAVED_MODELS_DIR, 'scaler1_LR.pkl')
-MODEL2_PATH = os.path.join(SAVED_MODELS_DIR, 'model2_GARCH.pkl')
-MODEL3_PATH = os.path.join(SAVED_MODELS_DIR, 'model3_RFR.pkl')
+MODEL1_RF_PATH = os.path.join(SAVED_MODELS_DIR, 'model1_RF.pkl')
+SCALER1_RF_PATH = os.path.join(SAVED_MODELS_DIR, 'scaler1_RF.pkl')
+MODEL1_LR_PATH = os.path.join(SAVED_MODELS_DIR, 'model1_LR.pkl')
+SCALER1_LR_PATH = os.path.join(SAVED_MODELS_DIR, 'scaler1_LR.pkl')
+MODEL2_GARCH_PATH = os.path.join(SAVED_MODELS_DIR, 'model2_GARCH.pkl')
+MODEL3_RFR_PATH = os.path.join(SAVED_MODELS_DIR, 'model3_RFR.pkl')
+MODEL3_SARIMAX_PATH = os.path.join(SAVED_MODELS_DIR, 'model3_SARIMAX.pkl')
 
 # Instrument specifications
 TARDIS_TYPE = 'derivative_ticker'
@@ -38,7 +39,8 @@ EXCHANGE = 'binance-futures'
 # Results directory
 RESULTS_DIR = os.path.join(BASE_DIR, 'results')
 os.makedirs(RESULTS_DIR, exist_ok=True)
-PREDICTIONS_CSV = os.path.join(RESULTS_DIR, 'pipeline_pred_funding_rate.csv')
+PREDICTIONS_RFR_CSV = os.path.join(RESULTS_DIR, 'predictions_RFR.csv')
+PREDICTIONS_SARIMAX_CSV = os.path.join(RESULTS_DIR, 'predictions_SARIMAX.csv')
 
 # ===========================================
 # General Configurations

@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import joblib
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from scipy import stats
-from config import MODEL1_PATH, MODEL2_PATH, SCALER1_PATH
+from config import MODEL1_RF_PATH, MODEL2_GARCH_PATH, SCALER1_RF_PATH
 from utilities.model_utils import load_model, load_garch_model
 
 # ===========================================
@@ -99,8 +99,8 @@ def add_interaction_terms(df):
 
 def add_model1_direction(df):
     # Load model and scaler
-    model1 = load_model(MODEL1_PATH)
-    scaler1 = load_model(SCALER1_PATH) 
+    model1 = load_model(MODEL1_RF_PATH)
+    scaler1 = load_model(SCALER1_RF_PATH) 
 
     model1_feature_columns = [
         'funding_rate_lag1', 'funding_rate_lag2', 'funding_rate_ma3', 'funding_rate_ma5', 'funding_rate_ema3',
@@ -132,7 +132,7 @@ def add_model2_volatility(df, steps=5):
     Load Model 2 (GARCH Model) and add forecasted volatility as features.
     Steps represent how far ahead we forecast, but we use h.1 for simplicity.
     """
-    model2_result = load_garch_model(MODEL2_PATH)
+    model2_result = load_garch_model(MODEL2_GARCH_PATH)
     volatility_forecast = model2_result.forecast(horizon=steps)
     # Take the first step forecasted variance
     h1_variance = volatility_forecast.variance.iloc[-1, 0]
